@@ -6,7 +6,7 @@ extern crate diesel;
 mod schema;
 
 use crate::schema::todo;
-use rocket::{self, get, post, put, routes};
+use rocket::{self, get, post, put, delete, routes};
 use rocket_contrib::json::Json;
 use rocket_contrib::databases::{database, diesel::PgConnection};
 use diesel::{Queryable, Insertable};
@@ -72,6 +72,17 @@ fn get_todos(conn: DbConn) -> Json<Vec<Todo>> {
     Json(todos)
 }
 
+#[delete("/<id>")]
+fn delete_todo(conn: DbConn, id: i32) -> Json<Todo> {
+    let target = todo::table.filter(todo::columns::id.eq(id));
+
+    let result = diesel::delete(target)
+        .get_result(&*conn)
+        .unwrap();
+
+    Json(result)
+}
+
 fn main() {
     rocket::ignite()
         .attach(DbConn::fairing())
@@ -79,8 +90,9 @@ fn main() {
             get_todos,
             create_todo,
             check_todo,
-            uncheck_todo],
-        )
+            uncheck_todo,
+            delete_todo
+        ])
         .launch();
 }
 
